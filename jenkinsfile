@@ -1,0 +1,19 @@
+node {
+
+  slackSend channel: 'deployment', message: "Started Build ${env.JOB_NAME}. (<${env.BUILD_URL}|Open>)", token: 'OLf1XDVihrIItw034cIr84c1' // For Slack update
+
+  def dockerHost = "209.132.234.17:5000" //Private docker registry
+  checkout scm // checkout git
+  sh "docker pull ${dockerHost}/base-image" //pulls the base image
+  sh "docker tag  ${dockerHost}/base-image base-image" //changes the name of the image with a new image tag
+  sh "./gradlew --stacktrace :backend:build -x test" // gradlew build command
+  def tagName = "${dockerHost}/backend:${env.BRANCH_NAME}_${env.BUILD_NUMBER}" // tagname for the image after build
+  sh "docker build -t ${tagName} -f assigner/Dockerfile ." //build the image
+  sh "docker push ${tagName}" // push to docker private repository
+
+  slackSend channel: 'deployment', message: "Updating service ${env.JOB_NAME}. with image: ${tagName} (<${env.BUILD_URL}|Open>)", token: 'OLf1XDVihrIItw034cIr84c1' // For slack update
+
+  sh "ssh root@${env.MASTER_SERVER} \"docker service update backend --image ${tagName} --detach=false --force\"" //ssh into master server and update the image for the service
+
+  slackSend channel: 'deployment', message: "Successfully updated service ${env.JOB_NAME} (<${env.BUILD_URL}|Open>)", token: 'OLf1XDVihrIItw034cIr84c1' // for slack update
+}
