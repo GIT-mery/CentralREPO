@@ -1,0 +1,18 @@
+node {
+
+  slackSend channel: 'deployment', message: "Started Build ${env.JOB_NAME}. (<${env.BUILD_URL}|Open>)", token: 'OLf1XDVihrIItw034cIr84c1'
+
+  def dockerHost = "209.132.234.17:5000"
+  checkout scm
+
+  def tagName = "${dockerHost}/ix/aicontent:${env.BRANCH_NAME}_${env.BUILD_NUMBER}"
+
+  sh "docker build -t ${tagName} --build-arg APP_ENV=production ."
+  sh "docker push ${tagName}"
+
+  slackSend channel: 'deployment', message: "Updating service ${env.JOB_NAME}. with image: ${tagName} (<${env.BUILD_URL}|Open>)", token: 'OLf1XDVihrIItw034cIr84c1'
+
+  sh "ssh root@${env.PROD_SWARM_MASTER} \"docker service update  ix-prod-aicontent --image ${tagName} --detach=false --with-registry-auth --force\""
+
+  slackSend channel: 'deployment', message: "Successfully updated service ${env.JOB_NAME} (<${env.BUILD_URL}|Open>)", token: 'OLf1XDVihrIItw034cIr84c1'
+}

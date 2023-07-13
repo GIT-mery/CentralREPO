@@ -1,0 +1,21 @@
+FROM node:18.3.0
+
+ARG APP_ENV
+
+COPY package.json package.json
+
+RUN npm config set strict-ssl false
+
+RUN npm install
+
+ENV NEXT_PUBLIC_APP_ENV=$APP_ENV
+
+COPY . .
+
+ENV STOREFRONT_API_URL="http://138.201.119.29:9420"
+
+EXPOSE 3000
+
+RUN yarn build
+
+CMD yarn start

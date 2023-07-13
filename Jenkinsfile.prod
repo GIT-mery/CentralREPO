@@ -1,0 +1,41 @@
+pipeline {
+    agent any
+    
+    environment {
+        region = "us-east-1"
+        docker_repo_uri = "723353022840.dkr.ecr.us-east-1.amazonaws.com/storefront-pdp"
+        task_def_arn = "arn:aws:ecs:us-east-1:723353022840:task-definition/storefront-frontend-pdp-ec2"
+        cluster = "ix-ecs-ec2"
+        exec_role_arn = "arn:aws:iam::723353022840:role/ecsTaskExecutionRole"
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                // Get SHA1 of current commit
+               // script {
+               //     commit_id = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+               // }
+                // Build the Docker image
+                sh "docker build -t ${docker_repo_uri}:${BRANCH_NAME}_${BUILD_NUMBER} ."
+                // Get Docker login credentials for ECR
+                sh "aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 723353022840.dkr.ecr.us-east-1.amazonaws.com"
+                // Push Docker image
+                sh "docker push ${docker_repo_uri}:${BRANCH_NAME}_${BUILD_NUMBER}"
+                // Clean up
+                sh "docker rmi -f ${docker_repo_uri}:${BRANCH_NAME}_${BUILD_NUMBER}"
+            }
+        }
+        stage('Deploy') {
+            steps {
+                // Override image field in taskdef file
+                //sh "sed -i 's|{{image}}|${docker_repo_uri}:${commit_id}|' taskdef.json"
+		sh "sed -i 's|{{image}}|${docker_repo_uri}:${BRANCH_NAME}_${BUILD_NUMBER}|' taskdef_ec2.json"
+                // Create a new task definition revision
+                sh "aws ecs register-task-definition --execution-role-arn ${exec_role_arn} --cli-input-json file://taskdef_ec2.json --region ${region}"
+                // Update service on Fargate
+                sh "aws ecs update-service --cluster ${cluster} --service storefront-frontend-pdp --task-definition ${task_def_arn} --region ${region}"
+            }
+        }
+    }
+}

@@ -1,0 +1,93 @@
+{
+    "executionRoleArn": "arn:aws:iam::723353022840:role/ecsTaskExecutionRole",
+    "containerDefinitions": [
+      {
+          "logConfiguration": {
+          "logDriver": "awslogs",
+          "options": {
+            "awslogs-group": "/ecs/storefornt-frontend-pdp-ec2",
+            "awslogs-region": "us-east-1",
+            "awslogs-stream-prefix": "ecs"
+          }
+        },
+        "portMappings": [
+          {
+            "hostPort": 3000,
+            "protocol": "tcp",
+            "containerPort": 3000
+          }
+        ],
+        "cpu": 512,
+        "environment": [
+          {
+            "name": "REDIS_HOST",
+            "value": "intentx-redis.ezdxlq.0001.use1.cache.amazonaws.com"
+          },
+          {
+            "name": "REDIS_PORT",
+            "value": "6379"
+          },
+          {
+            "name": "FOOTER_API_URL",
+            "value": "http://footer.intentx.com"
+          },
+          {
+            "name": "STOREFRONT_API_URL",
+            "value": "http://api.intentx.com:8080"
+          },
+          {
+            "name": "NODE_BUY_API_URL",
+            "value": "http://storefront-frontend.buy:4000"
+          },
+          {
+            "name": "CACHE_TTL_MINS",
+            "value": "360"
+          },
+          {
+            "name": "DAILYMAIL_CACHE_TTL_MINS",
+            "value": "360"
+          },
+          {
+            "name": "ENV",
+            "value": "production"
+          },
+          {
+            "name": "HOMEBUE_CACHE_TTL_MINS",
+            "value": "360"
+          },
+          {
+            "name": "NODE_ENV",
+            "value": "production"
+          }
+        ],
+        "mountPoints": [],
+        "memory": 4096,
+        "memoryReservation": 1024,
+        "volumesFrom": [],
+        "image": "{{image}}",
+        "healthCheck": {
+          "retries": 3,
+          "command": [
+            "CMD-SHELL",
+            "curl -f http://localhost:3000?clientId=dogtime || exit 1"
+          ],
+          "timeout": 30,
+          "interval": 60,
+          "startPeriod": 5
+        },
+        "essential": true,
+        "dockerLabels": {
+          "Name": "storefront-frontend-pdp-ec2"
+        },
+        "name": "storefront-frontend-pdp-ec2"
+      }
+    ],
+    "placementConstraints": [],
+    "taskRoleArn": "arn:aws:iam::723353022840:role/ecsTaskExecutionRole",
+    "family": "storefront-frontend-pdp-ec2",
+    "requiresCompatibilities": [
+      "EC2"
+    ],
+    "networkMode": "awsvpc",
+    "volumes": []
+  }
